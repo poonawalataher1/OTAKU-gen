@@ -63,14 +63,17 @@
    git clone https://github.com/yourusername/otaku-gen.git
    cd otaku-gen
 2. **Create a Virtual Enviroment**
-python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # or venv\Scripts\activate on Windows
 
 3. **Install Dependencies**
-pip install -r requirements.txt
+    ```bash
+    pip install -r requirements.txt
 
 4.**Run Django server**
-python manage.py runserver
+    ```bash
+    python manage.py runserver
 
 5.**Go to**
 http://localhost:8000/
