@@ -72,7 +72,6 @@
     pip install -r requirements.txt
 
 4.**Run Django server**
-    ```bash
     python manage.py runserver
 
 5.**Go to**
