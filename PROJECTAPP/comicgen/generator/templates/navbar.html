@@ -1,0 +1,12 @@
+{% load static %}
+
+<nav class="bg-gradient-to-r from-pink-700 to-purple-900 text-white p-4 shadow-lg">
+  <div class="container mx-auto flex justify-between items-center">
+    <a href="{% url 'landing' %}" class="text-2xl font-bold tracking-widest">OTAKU <span class="text-yellow-400">gen</span></a>
+
+    <div class="space-x-4">
+      <a href="{% url 'generate' %}" class="hover:text-yellow-300 transition">Normal Generator</a>
+      <a href="{% url 'story_mode' %}" class="hover:text-yellow-300 transition">Story Mode</a>
+    </div>
+  </div>
+</nav>

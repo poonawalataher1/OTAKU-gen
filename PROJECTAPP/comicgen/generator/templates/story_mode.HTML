@@ -1,0 +1,188 @@
+{% include 'navbar.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OTAKU gen | Story Mode</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-900 font-sans">
+<div class="flex h-screen overflow-hidden" x-data="storyApp()">
+
+  <!-- Main Section -->
+  <main class="flex-1 p-8 overflow-y-auto">
+    <!-- Top Bar: Session Info -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <label for="sessionName" class="block text-sm font-medium text-gray-700">Story Name:</label>
+        <input type="text" id="sessionName" placeholder="Eg. Cyber Cat City Chronicles"
+               class="mt-1 px-4 py-2 w-80 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
+      </div>
+
+      <!-- Story Mode Toggle -->
+      <div class="flex items-center">
+        <span class="mr-3 font-medium text-gray-700">Story Mode</span>
+        <button @click="storyMode = !storyMode"
+                :class="storyMode ? 'bg-purple-600' : 'bg-gray-300'"
+                class="relative inline-flex items-center h-6 rounded-full w-11 transition">
+          <span :class="storyMode ? 'translate-x-6' : 'translate-x-1'"
+                class="inline-block w-4 h-4 transform bg-white rounded-full transition"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Scene Prompt Input -->
+    <div>
+      <label for="scenePrompt" class="block text-lg font-semibold mb-2">Next Scene Prompt:</label>
+      <textarea id="scenePrompt" rows="4" placeholder="The cat meets a resistance leader in a neon alley..."
+                class="w-full p-4 rounded-lg bg-white border-2 border-purple-300 shadow-inner focus:outline-none focus:ring-2 focus:ring-purple-400 text-md"></textarea>
+    </div>
+
+    <!-- Layout Selector -->
+    <div class="mt-6">
+      <label class="block text-lg font-semibold mb-2">Choose Layout:</label>
+      <button @click="showLayoutModal = true"
+              class="bg-purple-600 text-white px-5 py-2 rounded-lg shadow hover:bg-purple-700">
+        Select Layout
+      </button>
+
+      <!-- Selected layout preview (optional) -->
+      <div class="mt-3 text-sm text-gray-600">
+        Selected Layout: <span class="font-bold text-purple-600" x-text="layoutMapping[selectedPanelCount]"></span>
+      </div>
+
+      <!-- Hidden input to send selected layout -->
+      <input type="hidden" name="layout" :value="layoutMapping[selectedPanelCount]">
+    </div>
+
+    <!-- Layout Modal -->
+    <div x-show="showLayoutModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div class="bg-white p-6 rounded-lg w-80 shadow-xl">
+        <h3 class="text-lg font-bold mb-4 text-center">Select Number of Panels</h3>
+        <div class="grid grid-cols-3 gap-4 mb-4">
+          <template x-for="n in [1,2,3,4,5,6,9]">
+            <button @click="selectedPanelCount = n; showLayoutModal = false"
+                    :class="{
+                      'bg-purple-600 text-white': selectedPanelCount === n,
+                      'bg-gray-200 text-gray-800': selectedPanelCount !== n
+                    }"
+                    class="py-2 rounded-lg font-semibold hover:bg-purple-500 hover:text-white transition">
+              <span x-text="n"></span> Panels
+            </button>
+          </template>
+        </div>
+        <p class="text-center text-sm text-gray-600">Mapped to: 
+          <span class="font-bold text-purple-600" x-text="layoutMapping[selectedPanelCount]"></span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex justify-between mt-6">
+      <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold px-5 py-2 rounded-full shadow"
+              @click="saveStory()">
+        Save Story
+      </button>
+
+      <button @click="generateNextPanel()"
+              class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-3 rounded-full shadow-lg transition">
+        Generate Panel
+      </button>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="flex justify-center items-center mt-8 hidden">
+      <img src="/static/images/chibi_loader.gif" alt="Loading..." class="w-24 h-24">
+      <p class="ml-4 text-purple-600 font-bold">Generating your epic scene...</p>
+    </div>
+
+    <!-- Generated Panels Container -->
+    <div id="generatedPanels" class="mt-10 space-y-6"></div>
+  </main>
+</div>
+
+<!-- Alpine.js Component Logic -->
+<script>
+  function storyApp() {
+    return {
+      storyMode: true,
+      showLayoutModal: false,
+      selectedPanelCount: 4,
+      layoutMapping: {
+        1: '1_large',
+        2: '2_panel_split',
+        3: '3_panel_vertical',
+        4: '4_panel_grid',
+        5: '5_panel_stack',
+        6: '6_panel_combo',
+        9: '9_grid'
+      },
+
+      saveStory() {
+        const storyName = document.getElementById('sessionName').value;
+
+        fetch('/save_story/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: JSON.stringify({ name: storyName })
+        })
+        .then(response => response.json())
+        .then(data => {
+          localStorage.setItem('session_id', data.session_id);
+          alert('Story Saved!');
+        });
+      },
+
+      generateNextPanel() {
+        const prompt = document.getElementById('scenePrompt').value;
+        const sessionId = localStorage.getItem('session_id');
+        const loading = document.getElementById('loadingSpinner');
+        const panelContainer = document.getElementById('generatedPanels');
+        const layout = this.layoutMapping[this.selectedPanelCount];
+
+        // Show loading
+        loading.classList.remove('hidden');
+
+        fetch('/generate_panel/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+            session_id: sessionId,
+            layout: layout
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          loading.classList.add('hidden');
+
+          // Create and add new panel
+          const img = document.createElement('img');
+          img.src = data.image_url;
+          img.alt = "Generated Panel";
+          img.className = "w-full max-w-3xl rounded-lg shadow-lg border-2 border-purple-400";
+
+          const panelBlock = document.createElement('div');
+          panelBlock.className = "flex flex-col items-center";
+          panelBlock.appendChild(img);
+
+          panelContainer.appendChild(panelBlock);
+        })
+        .catch(err => {
+          loading.classList.add('hidden');
+          alert('Error generating panel!');
+          console.error(err);
+        });
+      }
+    }
+  }
+</script>
+</body>
+</html>

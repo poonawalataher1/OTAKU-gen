@@ -1,0 +1,73 @@
+{% load static %}
+{% include 'navbar.html' %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>OTAKU gen | Create Your Comic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 text-gray-900 font-sans">
+
+    <div class="max-w-4xl mx-auto p-8">
+        <h1 class="text-4xl font-extrabold text-center mb-8 text-black tracking-wide">Create Your ART</h1>
+
+        <form id="generateForm" method="POST" class="space-y-10">
+            {% csrf_token %}
+
+            <!-- Prompt -->
+            <div>
+                <label for="prompt" class="block text-xl font-semibold mb-2">What's your idea?</label>
+                <textarea name="prompt" id="prompt" rows="4" placeholder="A cyberpunk cat saves a floating city..."
+                    class="w-full p-4 rounded-lg bg-white border-2 border-purple-300 shadow-inner focus:outline-none focus:ring-2 focus:ring-purple-400 text-lg"></textarea>
+            </div>
+
+            <!-- Art Styles -->
+            <div>
+                <h2 class="text-xl font-bold mb-4">Choose your Art style:</h2>
+                <div class="grid grid-cols-3 gap-4">
+                    {% for value, label, image in styles %}
+                    <label class="cursor-pointer group">
+                        <input type="radio" name="style" value="{{ value }}" class="hidden peer" {% if forloop.first %}checked{% endif %}>
+                        <div class="border-4 border-transparent peer-checked:border-purple-400 rounded-lg overflow-hidden">
+                            <img src="{% static image %}" alt="{{ label }}" class="w-full h-40 object-cover">
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="text-center pt-4">
+                <button type="submit" class="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white text-lg font-bold rounded-full shadow-lg transition">
+                    Generate
+                </button>
+            </div>
+
+            <!-- Output Image -->
+            {% if image_url %}
+            <h2 class="text-2xl font-bold mt-10">Generated Art</h2>
+            <img src="{{ image_url }}" alt="Generated Comic" class="mt-4 mx-auto rounded-lg shadow-lg">
+            {% endif %}
+        </form>
+
+        <!-- Loading Spinner -->
+        <div id="loadingOverlay" class="fixed inset-0 bg-white bg-opacity-90 flex flex-col justify-center items-center z-50 hidden">
+            <img src="{% static 'images/chibi_loader.gif' %}" alt="Loading" class="w-32 h-32 mb-6">
+            <p class="text-xl font-bold animate-pulse text-purple-700">Generating your Magic...</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("generateForm").addEventListener("submit", function () {
+            document.getElementById("loadingOverlay").classList.remove("hidden");
+        });
+    </script>
+
+</body>
+</html>
+
+
